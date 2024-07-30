@@ -97,4 +97,4 @@ def generate_masks():
     return jsonify({"masks": serializable_masks})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5557)
+    app.run(debug=True, port=5557,host='0.0.0.0')
