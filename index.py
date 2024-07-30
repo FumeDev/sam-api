@@ -1,10 +1,44 @@
+import os
+from pathlib import Path
 from flask import Flask, request, jsonify
 import numpy as np
 from PIL import Image
 import io
+import requests
 import torch
 from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+from tqdm import tqdm
 
+
+url = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth"
+
+# Path to save the model file
+#User path
+user_path = Path.home()
+model_path = f"{str(user_path)}/FumeData/sam_vit_h_4b8939.pth"
+
+def download_file(url, destination):
+    response = requests.get(url, stream=True)
+    total_size = int(response.headers.get('content-length', 0))
+    block_size = 1024  # 1 Kilobyte
+    t = tqdm(total=total_size, unit='iB', unit_scale=True)
+
+    with open(destination, 'wb') as f:
+        for data in response.iter_content(block_size):
+            t.update(len(data))
+            f.write(data)
+    t.close()
+    if total_size != 0 and t.n != total_size:
+        print("ERROR: Something went wrong")
+    else:
+        print(f"Model downloaded to: {destination}")
+
+# Check if the file already exists
+if not os.path.exists(model_path):
+    # Download the model file if it doesn't exist
+    download_file(url, model_path)
+else:
+    print(f"Model already exists at: {model_path}")
 
 class SamModelHandler:
     def __init__(self, model_type, checkpoint_path, device, points_per_side=32):
@@ -22,7 +56,7 @@ app = Flask(__name__)
 # You might want to adjust these parameters based on your needs
 model_handler = SamModelHandler(
     model_type="vit_h",
-    checkpoint_path="sam_vit_h_4b8939.pth",
+    checkpoint_path=model_path,
     device="cuda" if torch.cuda.is_available() else "cpu",
     points_per_side=32
 )
